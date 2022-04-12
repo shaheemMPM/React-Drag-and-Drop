@@ -4,6 +4,11 @@ import Column from './Column';
 import initialData from './initial-data';
 import '@atlaskit/css-reset';
 import { DragDropContext } from 'react-beautiful-dnd';
+import styled from 'styled-components';
+
+const Container = styled.div`
+	display: flex;
+`;
 
 const App = () => {
 	const [data, setData] = useState(initialData);
@@ -35,24 +40,55 @@ const App = () => {
 		)
 			return;
 
-		const column = data.columns[source.droppableId];
-		const newTaskIds = Array.from(column.taskIds);
-		newTaskIds.splice(source.index, 1);
-		newTaskIds.splice(destination.index, 0, draggableId);
+		const startColumn = data.columns[source.droppableId];
+		const finishColumn = data.columns[destination.droppableId];
 
-		const newColumn = {
-			...column,
-			taskIds: newTaskIds,
+		// Moving Item within a list
+		if (startColumn === finishColumn) {
+			const newTaskIds = Array.from(startColumn.taskIds);
+			newTaskIds.splice(source.index, 1);
+			newTaskIds.splice(destination.index, 0, draggableId);
+
+			const newColumn = {
+				...startColumn,
+				taskIds: newTaskIds,
+			};
+
+			const newData = {
+				...data,
+				columns: {
+					...data.columns,
+					[newColumn.id]: newColumn,
+				},
+			};
+
+			setData(newData);
+			return;
+		}
+
+		// Moving Item from one list to another
+		const startTaskIds = Array.from(startColumn.taskIds);
+		startTaskIds.splice(source.index, 1);
+		const newStartColumn = {
+			...startColumn,
+			taskIds: startTaskIds,
+		};
+
+		const finishTaskIds = Array.from(finishColumn.taskIds);
+		finishTaskIds.splice(destination.index, 0, draggableId);
+		const newFinishColumn = {
+			...finishColumn,
+			taskIds: finishTaskIds,
 		};
 
 		const newData = {
 			...data,
 			columns: {
 				...data.columns,
-				[newColumn.id]: newColumn,
+				[newStartColumn.id]: newStartColumn,
+				[newFinishColumn.id]: newFinishColumn,
 			},
 		};
-
 		setData(newData);
 	};
 
@@ -62,12 +98,14 @@ const App = () => {
 			// onDragUpdate={dragUpdateHandler}
 			onDragEnd={dragEndHandler}
 		>
-			{data.columnOrder.map((columnId) => {
-				const column = data.columns[columnId];
-				const tasks = column.taskIds.map((taskId) => data.tasks[taskId]);
+			<Container>
+				{data.columnOrder.map((columnId) => {
+					const column = data.columns[columnId];
+					const tasks = column.taskIds.map((taskId) => data.tasks[taskId]);
 
-				return <Column key={column.id} column={column} tasks={tasks} />;
-			})}
+					return <Column key={column.id} column={column} tasks={tasks} />;
+				})}
+			</Container>
 		</DragDropContext>
 	);
 };
